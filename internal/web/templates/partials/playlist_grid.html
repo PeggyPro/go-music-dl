@@ -2,7 +2,7 @@
 {{ if .IsLocalColPage }}
     <div class="list-header" style="margin-bottom: 20px;">
         <div>
-            <span class="result-count" style="font-size: 16px;"><i class="fa-solid fa-folder-open"></i> 本地自制歌单 (共 {{ len .Playlists }} 个)</span>
+            <span class="result-count" style="font-size: 16px;"><i class="fa-solid fa-folder-open"></i> 本地自制歌单（共 {{ len .Playlists }} 个）</span>
         </div>
         <button type="button" class="btn-pill btn-pill-primary" onclick="showEditCollectionModal()">
             <i class="fa-solid fa-plus"></i> 新建歌单
@@ -13,7 +13,10 @@
 {{ if .Playlists }}
     <div class="list-header" style="margin-bottom: 15px;">
         <div>
-            <span class="result-count"><i class="fa-solid fa-list"></i> 找到 <span class="count">{{ .TotalCount }}</span> 个歌单</span>
+            <span class="result-count">
+                <i class="fa-solid {{ if eq .SearchType "album" }}fa-compact-disc{{ else }}fa-list{{ end }}"></i>
+                找到 <span class="count">{{ .TotalCount }}</span> {{ if eq .SearchType "album" }}张专辑{{ else }}个歌单{{ end }}
+            </span>
             {{ if gt .TotalCount 0 }}
             <div class="page-summary">当前第 {{ .Page }} / {{ .TotalPages }} 页，显示 {{ .PageStart }} - {{ .PageEnd }} / {{ .TotalCount }}</div>
             {{ end }}
@@ -21,7 +24,7 @@
     </div>
     <div class="playlist-grid-container">
         {{ range .Playlists }}
-        <div class="playlist-card" onclick="location.href='{{$.Root}}/{{ if eq .Source "local" }}collection?id={{.ID}}{{ else }}playlist?id={{.ID}}&source={{.Source}}{{ end }}'">
+        <div class="playlist-card" onclick="location.href='{{$.Root}}/{{ if eq .Source "local" }}collection?id={{.ID}}{{ else if eq $.SearchType "album" }}album?id={{.ID}}&source={{.Source}}{{ else }}playlist?id={{.ID}}&source={{.Source}}{{ end }}'">
             <div class="playlist-cover">
                 <img src="{{ .Cover }}" loading="lazy" onerror="this.src='https://via.placeholder.com/400?text=Cover'">
                 <span class="tag {{ if eq .Source "local" }}tag-local{{ else }}tag-src{{ end }}" style="position:absolute; top:5px; right:5px; margin:0; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
@@ -38,10 +41,10 @@
                     {{ end }}
                 </div>
                 <div class="playlist-author"><i class="fa-regular fa-user"></i> {{ .Creator }}</div>
-                
+
                 <div style="display:flex; justify-content: space-between; align-items: flex-end; margin-top: auto;">
                     <div class="playlist-count">共 {{ .TrackCount }} 首</div>
-                    
+
                     {{ if eq .Source "local" }}
                     <div style="display:flex; gap:6px;">
                         <button class="col-action-btn" onclick="event.stopPropagation(); showEditCollectionModal('{{.ID}}', '{{.Name}}', '{{.Description}}', '{{.Cover}}')" title="编辑歌单"><i class="fa-solid fa-pen"></i></button>

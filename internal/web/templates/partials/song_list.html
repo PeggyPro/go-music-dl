@@ -3,12 +3,12 @@
     <div class="list-header">
         <div>
             {{ if .ColID }}
-            <span class="result-count" style="font-size: 16px;"><i class="fa-solid fa-folder-open"></i> 正在查看: <span style="color:#10b981; margin-left: 5px;">{{ .ColName }}</span> (共 {{ .TotalCount }} 首)</span>
+            <span class="result-count" style="font-size: 16px;"><i class="fa-solid fa-folder-open"></i> 正在查看: <span style="color:#10b981; margin-left: 5px;">{{ .ColName }}</span>（共 {{ .TotalCount }} 首）</span>
             {{ else }}
             <span class="result-count"><i class="fa-solid fa-music"></i> 找到 <span class="count">{{ .TotalCount }}</span> 首歌曲</span>
             {{ if .PlaylistLink }}
                 <a href="{{ .PlaylistLink }}" target="_blank" class="playlist-source-link">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> 打开原始歌单
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> 打开原始页面
                 </a>
             {{ end }}
             {{ end }}
@@ -49,22 +49,22 @@
 
     <ul class="result-list">
         {{ range .Result }}
-        <li class="song-card" 
-            data-id="{{.ID}}" 
-            data-source="{{.Source}}" 
-            data-duration="{{.Duration}}" 
-            data-name="{{.Name}}" 
+        <li class="song-card"
+            data-id="{{.ID}}"
+            data-source="{{.Source}}"
+            data-duration="{{.Duration}}"
+            data-name="{{.Name}}"
             data-artist="{{.Artist}}"
             data-cover="{{.Cover}}"
             data-extra='{{tojson .Extra}}'>
-            
+
             <div class="checkbox-wrapper">
                 <input type="checkbox" class="song-checkbox" onclick="event.stopPropagation(); updateBatchToolbar();">
             </div>
 
             <div class="cover-wrapper">
                 {{ if .Cover }}
-                    <img src="{{ .Cover }}" alt="{{ .Name }}" loading="lazy" onerror="this.src='https://via.placeholder.com/150?text=Music'" >
+                    <img src="{{ .Cover }}" alt="{{ .Name }}" loading="lazy" onerror="this.src='https://via.placeholder.com/150?text=Music'">
                 {{ else }}
                     <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:24px;">🎵</div>
                     <img src="https://via.placeholder.com/150?text=Music" style="display:none;">
@@ -89,7 +89,7 @@
                     <span class="tag tag-loading" id="bitrate-{{.ID}}"><i class="fa fa-circle-notch fa-spin"></i></span>
                 </div>
             </div>
-            
+
             <div class="actions">
                 <button type="button" class="btn-circle btn-play" title="播放"
                         onclick="playAllAndJumpTo(this)">
@@ -100,7 +100,7 @@
                         onclick="switchSource(this)">
                     <i class="fa-solid fa-arrows-rotate"></i>
                 </button>
-                
+
                 {{ if $.ColID }}
                 <button type="button" class="btn-circle btn-fav" title="移出当前歌单"
                         onclick="removeSongFromCollection(this, '{{$.ColID}}', '{{.ID}}', '{{.Source}}')">
@@ -113,17 +113,17 @@
                 </button>
                 {{ end }}
 
-                <a href="{{$.Root}}/download?id={{.ID}}&source={{.Source}}&name={{.Name}}&artist={{.Artist}}&cover={{urlquery .Cover}}&extra={{urlquery (tojson .Extra)}}" 
+                <a href="{{$.Root}}/download?id={{.ID}}&source={{.Source}}&name={{.Name}}&artist={{.Artist}}&cover={{urlquery .Cover}}&extra={{urlquery (tojson .Extra)}}"
                    id="dl-{{.ID}}" class="btn-circle btn-dl btn-download" title="下载歌曲" target="_blank">
                     <i class="fa-solid fa-download"></i>
                 </a>
 
-                <a href="{{$.Root}}/download_lrc?id={{.ID}}&source={{.Source}}&name={{.Name}}&artist={{.Artist}}" 
+                <a href="{{$.Root}}/download_lrc?id={{.ID}}&source={{.Source}}&name={{.Name}}&artist={{.Artist}}"
                    id="lrc-{{.ID}}" class="btn-circle btn-dl btn-lyric" title="下载歌词" target="_blank">
                     <i class="fa-solid fa-file-lines"></i>
                 </a>
 
-                <a href="{{$.Root}}/download_cover?url={{ .Cover }}&name={{ .Name }}&artist={{ .Artist }}" 
+                <a href="{{$.Root}}/download_cover?url={{ .Cover }}&name={{ .Name }}&artist={{ .Artist }}"
                    class="btn-circle btn-dl btn-cover" title="下载封面" target="_blank">
                     <i class="fa-regular fa-image"></i>
                 </a>

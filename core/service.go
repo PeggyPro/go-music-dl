@@ -165,6 +165,22 @@ func GetSearchFunc(source string) SearchFunc {
 	}
 }
 
+func GetAlbumSearchFunc(source string) SearchPlaylistFunc {
+	c := CM.Get(source)
+	switch source {
+	case "netease":
+		return netease.New(c).SearchAlbum
+	case "qq":
+		return qq.New(c).SearchAlbum
+	case "kugou":
+		return kugou.New(c).SearchAlbum
+	case "kuwo":
+		return kuwo.New(c).SearchAlbum
+	default:
+		return nil
+	}
+}
+
 func GetPlaylistSearchFunc(source string) SearchPlaylistFunc {
 	c := CM.Get(source)
 	switch source {
@@ -182,6 +198,22 @@ func GetPlaylistSearchFunc(source string) SearchPlaylistFunc {
 		return soda.New(c).SearchPlaylist
 	case "fivesing":
 		return fivesing.New(c).SearchPlaylist
+	default:
+		return nil
+	}
+}
+
+func GetAlbumDetailFunc(source string) func(string) ([]model.Song, error) {
+	c := CM.Get(source)
+	switch source {
+	case "netease":
+		return netease.New(c).GetAlbumSongs
+	case "qq":
+		return qq.New(c).GetAlbumSongs
+	case "kugou":
+		return kugou.New(c).GetAlbumSongs
+	case "kuwo":
+		return kuwo.New(c).GetAlbumSongs
 	default:
 		return nil
 	}
@@ -333,6 +365,22 @@ func GetParsePlaylistFunc(source string) func(string) (*model.Playlist, []model.
 	}
 }
 
+func GetParseAlbumFunc(source string) func(string) (*model.Playlist, []model.Song, error) {
+	c := CM.Get(source)
+	switch source {
+	case "netease":
+		return netease.New(c).ParseAlbum
+	case "qq":
+		return qq.New(c).ParseAlbum
+	case "kugou":
+		return kugou.New(c).ParseAlbum
+	case "kuwo":
+		return kuwo.New(c).ParseAlbum
+	default:
+		return nil
+	}
+}
+
 // ==========================================
 // 辅助与解析方法
 // ==========================================
@@ -371,21 +419,33 @@ func DetectSource(link string) string {
 func GetOriginalLink(source, id, typeStr string) string {
 	switch source {
 	case "netease":
+		if typeStr == "album" {
+			return "https://music.163.com/#/album?id=" + id
+		}
 		if typeStr == "playlist" {
 			return "https://music.163.com/#/playlist?id=" + id
 		}
 		return "https://music.163.com/#/song?id=" + id
 	case "qq":
+		if typeStr == "album" {
+			return "https://y.qq.com/n/ryqq/albumDetail/" + id
+		}
 		if typeStr == "playlist" {
 			return "https://y.qq.com/n/ryqq/playlist/" + id
 		}
 		return "https://y.qq.com/n/ryqq/songDetail/" + id
 	case "kugou":
+		if typeStr == "album" {
+			return "https://www.kugou.com/album/" + id + ".html"
+		}
 		if typeStr == "playlist" {
 			return "https://www.kugou.com/yy/special/single/" + id + ".html"
 		}
 		return "https://www.kugou.com/song/#hash=" + id
 	case "kuwo":
+		if typeStr == "album" {
+			return "http://www.kuwo.cn/album_detail/" + id
+		}
 		if typeStr == "playlist" {
 			return "http://www.kuwo.cn/playlist_detail/" + id
 		}
@@ -667,6 +727,10 @@ func GetAllSourceNames() []string {
 
 func GetPlaylistSourceNames() []string {
 	return []string{"netease", "qq", "kugou", "kuwo", "bilibili", "soda", "fivesing"}
+}
+
+func GetAlbumSourceNames() []string {
+	return []string{"netease", "qq", "kugou", "kuwo"}
 }
 
 func GetDefaultSourceNames() []string {

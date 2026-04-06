@@ -64,11 +64,7 @@ func RegisterMusicRoutes(api *gin.RouterGroup) {
 		sources := c.QueryArray("sources")
 
 		if len(sources) == 0 {
-			if searchType == "playlist" {
-				sources = core.GetPlaylistSourceNames()
-			} else {
-				sources = core.GetDefaultSourceNames()
-			}
+			sources = defaultSourcesForSearchType(searchType)
 		}
 
 		var allSongs []model.Song
@@ -104,6 +100,20 @@ func RegisterMusicRoutes(api *gin.RouterGroup) {
 					}
 				}
 				if !parsed {
+					parseAlbumFn := core.GetParseAlbumFunc(src)
+					if parseAlbumFn != nil {
+						if album, songs, err := parseAlbumFn(keyword); err == nil {
+							if searchType == "album" {
+								allPlaylists = append(allPlaylists, *album)
+							} else {
+								allSongs = append(allSongs, songs...)
+								searchType = "song"
+							}
+							parsed = true
+						}
+					}
+				}
+				if !parsed {
 					errorMsg = fmt.Sprintf("解析失败: 暂不支持 %s 平台的此链接类型或解析出错", src)
 				}
 			}
@@ -120,6 +130,22 @@ func RegisterMusicRoutes(api *gin.RouterGroup) {
 						if fn != nil {
 							res, err := fn(keyword)
 							if err == nil {
+								for i := range res {
+									res[i].Source = s
+								}
+								mu.Lock()
+								allPlaylists = append(allPlaylists, res...)
+								mu.Unlock()
+							}
+						}
+					} else if searchType == "album" {
+						fn := core.GetAlbumSearchFunc(s)
+						if fn != nil {
+							res, err := fn(keyword)
+							if err == nil {
+								for i := range res {
+									res[i].Source = s
+								}
 								mu.Lock()
 								allPlaylists = append(allPlaylists, res...)
 								mu.Unlock()
@@ -165,7 +191,28 @@ func RegisterMusicRoutes(api *gin.RouterGroup) {
 			errMsg = fmt.Sprintf("获取歌单失败: %v", err)
 		}
 		playlistLink := core.GetOriginalLink(src, id, "playlist")
-		renderIndex(c, songs, nil, "", []string{src}, errMsg, "song", playlistLink, "", "", false)
+		renderIndex(c, songs, nil, "", []string{src}, errMsg, "playlist", playlistLink, "", "", false)
+	})
+
+	api.GET("/album", func(c *gin.Context) {
+		id := c.Query("id")
+		src := c.Query("source")
+		if id == "" || src == "" {
+			renderIndex(c, nil, nil, "", nil, "缺少参数", "album", "", "", "", false)
+			return
+		}
+		fn := core.GetAlbumDetailFunc(src)
+		if fn == nil {
+			renderIndex(c, nil, nil, "", nil, "该源不支持查看专辑详情", "album", "", "", "", false)
+			return
+		}
+		songs, err := fn(id)
+		errMsg := ""
+		if err != nil {
+			errMsg = fmt.Sprintf("获取专辑失败: %v", err)
+		}
+		albumLink := core.GetOriginalLink(src, id, "album")
+		renderIndex(c, songs, nil, "", []string{src}, errMsg, "album", albumLink, "", "", false)
 	})
 
 	api.GET("/inspect", func(c *gin.Context) {

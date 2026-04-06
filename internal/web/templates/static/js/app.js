@@ -364,9 +364,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function toggleSearchType(type) {
     const checkboxes = document.querySelectorAll('.source-checkbox');
+    const searchInput = document.getElementById('search-keyword');
+    const placeholders = {
+        song: '搜索歌曲、歌手，或直接粘贴分享链接',
+        playlist: '搜索歌单、创建者，或直接粘贴歌单链接',
+        album: '搜索专辑、歌手，或直接粘贴专辑链接'
+    };
+
+    if (searchInput && placeholders[type]) {
+        searchInput.placeholder = placeholders[type];
+    }
+
     checkboxes.forEach(cb => {
-        const isSupported = cb.dataset.supported === "true"; 
+        let isSupported = true;
         if (type === 'playlist') {
+            isSupported = cb.dataset.playlistSupported === 'true';
+        } else if (type === 'album') {
+            isSupported = cb.dataset.albumSupported === 'true';
+        }
+
+        if (type === 'playlist' || type === 'album') {
             if (!isSupported) {
                 cb.disabled = true;
                 cb.checked = false;

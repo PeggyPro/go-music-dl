@@ -32,6 +32,42 @@ type FeatureFlags struct {
 
 var featureFlags FeatureFlags
 
+func defaultSourcesForSearchType(searchType string) []string {
+	switch searchType {
+	case "playlist":
+		return core.GetPlaylistSourceNames()
+	case "album":
+		return core.GetAlbumSourceNames()
+	default:
+		return core.GetDefaultSourceNames()
+	}
+}
+
+func collectionLabelForSearchType(searchType string) string {
+	if searchType == "album" {
+		return "专辑"
+	}
+	return "歌单"
+}
+
+func collectionCreatorLabelForSearchType(searchType string) string {
+	if searchType == "album" {
+		return "歌手"
+	}
+	return "创建者"
+}
+
+func searchPlaceholderForType(searchType string) string {
+	switch searchType {
+	case "playlist":
+		return "搜索歌单、创建者，或直接粘贴歌单链接"
+	case "album":
+		return "搜索专辑、歌手，或直接粘贴专辑链接"
+	default:
+		return "搜索歌曲、歌手，或直接粘贴分享链接"
+	}
+}
+
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		method := c.Request.Method
@@ -63,6 +99,10 @@ func renderIndex(c *gin.Context, songs []model.Song, playlists []model.Playlist,
 	playlistSupported := make(map[string]bool)
 	for _, s := range core.GetPlaylistSourceNames() {
 		playlistSupported[s] = true
+	}
+	albumSupported := make(map[string]bool)
+	for _, s := range core.GetAlbumSourceNames() {
+		albumSupported[s] = true
 	}
 
 	settings := core.GetWebSettings()
@@ -135,12 +175,16 @@ func renderIndex(c *gin.Context, songs []model.Song, playlists []model.Playlist,
 		"PageEnd":            pageEnd,
 		"Keyword":            q,
 		"AllSources":         allSrc,
-		"DefaultSources":     core.GetDefaultSourceNames(),
+		"DefaultSources":     defaultSourcesForSearchType(searchType),
 		"SourceDescriptions": desc,
 		"Selected":           selected,
 		"Error":              errMsg,
 		"SearchType":         searchType,
 		"PlaylistSupported":  playlistSupported,
+		"AlbumSupported":     albumSupported,
+		"SearchPlaceholder":  searchPlaceholderForType(searchType),
+		"CollectionLabel":    collectionLabelForSearchType(searchType),
+		"CollectionCreator":  collectionCreatorLabelForSearchType(searchType),
 		"Root":               RoutePrefix,
 		"PlaylistLink":       playlistLink,
 		"ColID":              colID,
