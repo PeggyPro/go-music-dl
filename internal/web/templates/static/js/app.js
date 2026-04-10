@@ -499,6 +499,54 @@ function refreshCurrentPageContent(options = {}) {
     });
 }
 
+function isEditableElement(element) {
+    if (!(element instanceof Element)) return false;
+    if (element.isContentEditable) return true;
+    return !!element.closest('[contenteditable=""], [contenteditable="true"], input, textarea, select');
+}
+
+function hasVisibleModalOverlay() {
+    return Array.from(document.querySelectorAll('.modal-overlay')).some((overlay) => {
+        return window.getComputedStyle(overlay).display !== 'none';
+    });
+}
+
+function getActivePaginationState() {
+    const paginationBar = Array.from(document.querySelectorAll('.pagination-bar[data-current-page][data-total-pages]'))
+        .find((bar) => bar.offsetParent !== null);
+    if (!paginationBar) return null;
+
+    const currentPage = parsePositiveInt(paginationBar.dataset.currentPage, 1);
+    const totalPages = parsePositiveInt(paginationBar.dataset.totalPages, 1);
+    if (totalPages <= 1) return null;
+
+    return { currentPage, totalPages };
+}
+
+function handlePaginationShortcut(event) {
+    if (event.defaultPrevented || event.isComposing) return;
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    if (isEditableElement(event.target) || isEditableElement(document.activeElement)) return;
+    if (hasVisibleModalOverlay()) return;
+
+    let delta = 0;
+    if (event.key === 'PageUp') {
+        delta = -1;
+    } else if (event.key === 'PageDown') {
+        delta = 1;
+    }
+    if (delta === 0) return;
+
+    const state = getActivePaginationState();
+    if (!state) return;
+
+    const nextPage = state.currentPage + delta;
+    if (nextPage < 1 || nextPage > state.totalPages) return;
+
+    event.preventDefault();
+    goToPage(nextPage);
+}
+
 function bindPageNavigationEvents() {
     if (pageNavigationEventsBound) return;
     pageNavigationEventsBound = true;
@@ -518,6 +566,8 @@ function bindPageNavigationEvents() {
         event.preventDefault();
         navigateTo(link.href);
     }, true);
+
+    document.addEventListener('keydown', handlePaginationShortcut);
 
     window.addEventListener('popstate', function() {
         navigateTo(window.location.href, {

@@ -82,7 +82,38 @@ func TestAppJSIncludesAjaxNavigationEntryPoints(t *testing.T) {
 	if !strings.Contains(js, "function bindPageNavigationEvents()") {
 		t.Fatal("app.js missing bindPageNavigationEvents function")
 	}
+	if !strings.Contains(js, "function handlePaginationShortcut(event)") {
+		t.Fatal("app.js missing pagination shortcut handler")
+	}
+	if !strings.Contains(js, "document.addEventListener('keydown', handlePaginationShortcut);") {
+		t.Fatal("app.js missing pagination shortcut binding")
+	}
 	if !strings.Contains(js, "initializePageContent(document);") {
 		t.Fatal("app.js missing initializePageContent bootstrap")
+	}
+}
+
+func TestPaginationTemplatesExposeShortcutMetadata(t *testing.T) {
+	paths := []string{
+		"templates/partials/song_list.html",
+		"templates/partials/playlist_grid.html",
+	}
+
+	for _, path := range paths {
+		content, err := templateFS.ReadFile(path)
+		if err != nil {
+			t.Fatalf("ReadFile(%s): %v", path, err)
+		}
+
+		html := string(content)
+		if !strings.Contains(html, `data-current-page="{{ .Page }}"`) {
+			t.Fatalf("%s missing current page metadata", path)
+		}
+		if !strings.Contains(html, `data-total-pages="{{ .TotalPages }}"`) {
+			t.Fatalf("%s missing total pages metadata", path)
+		}
+		if !strings.Contains(html, `data-shortcut-hint="PgUp / PgDn"`) {
+			t.Fatalf("%s missing pagination shortcut hint", path)
+		}
 	}
 }

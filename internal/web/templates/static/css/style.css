@@ -147,6 +147,7 @@ body.batch-mode .song-card { padding-left: 10px; }
 .pagination-bar {
     margin: 18px 0 8px;
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     gap: 12px;
@@ -156,6 +157,16 @@ body.batch-mode .song-card { padding-left: 10px; }
     font-size: 13px;
     font-weight: 600;
     color: var(--text-sub);
+}
+
+.pagination-shortcut-hint {
+    font-size: 12px;
+    color: var(--text-sub);
+    padding: 4px 10px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 999px;
+    background: #f8fafc;
+    white-space: nowrap;
 }
 
 .result-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 15px; }
@@ -466,6 +477,7 @@ body.batch-mode .song-card { padding-left: 10px; }
     .modal { width: 92%; max-height: 85vh; padding: 20px; }
     .pagination-bar { gap: 8px; }
     .pagination-text { font-size: 12px; }
+    .pagination-shortcut-hint { font-size: 11px; padding: 3px 8px; }
     .setting-item { padding: 10px; }
     .setting-toggle {
         gap: 8px;
