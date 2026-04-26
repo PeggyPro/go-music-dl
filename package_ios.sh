@@ -4,34 +4,43 @@ set -e
 
 echo "--- 正在初始化 iOS 构建环境 ---"
 
-# 【终极修复方案】
-# 解决 Xcode 14.3+ 彻底移除 libarclite，而 gogio 内部又硬编码了低版本 target 导致的报错。
-# 我们动态获取当前 runner 上的 Xcode 路径，并将开源社区备份的 libarclite 补齐到对应目录。
+# 【本地生成空壳库修复方案】
 XCODE_PATH=$(xcode-select -p)
 ARC_DIR="${XCODE_PATH}/Toolchains/XcodeDefault.xctoolchain/usr/lib/arc"
 
-if [ ! -d "$ARC_DIR" ]; then
-    echo "Xcode 缺少 arc 目录，正在从社区源补齐 libarclite 库..."
+if [ ! -f "$ARC_DIR/libarclite_iphonesimulator.a" ]; then
+    echo "Xcode 缺少 arc 目录，正在本地编译生成空壳 libarclite 库..."
     sudo mkdir -p "$ARC_DIR"
     
-    # 补齐真机所需库
-    sudo curl -sSL -o "$ARC_DIR/libarclite_iphoneos.a" "https://raw.githubusercontent.com/kamyarelyasi/Libarclite-Files/main/arc/libarclite_iphoneos.a"
+    # 1. 创建空的 C 源文件
+    echo "void dummy_arclite(void) {}" > dummy.c
     
-    # 补齐模拟器所需库 (即你刚才报错缺失的那个文件)
-    sudo curl -sSL -o "$ARC_DIR/libarclite_iphonesimulator.a" "https://raw.githubusercontent.com/kamyarelyasi/Libarclite-Files/main/arc/libarclite_iphonesimulator.a"
+    # 2. 编译出 x86_64 和 arm64 架构的模拟器对象文件 (对应报错中缺少的 simulator 架构)
+    clang -c dummy.c -arch x86_64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path) -mios-simulator-version-min=13.0 -o dummy_sim_x86_64.o
+    clang -c dummy.c -arch arm64 -isysroot $(xcrun --sdk iphonesimulator --show-sdk-path) -mios-simulator-version-min=13.0 -o dummy_sim_arm64.o
     
-    sudo chmod +x "$ARC_DIR"/*.a
-    echo "libarclite 库补齐完毕！"
+    # 3. 编译出 arm64 架构的真机对象文件
+    clang -c dummy.c -arch arm64 -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=13.0 -o dummy_os_arm64.o
+    
+    # 4. 使用 libtool 将对象文件打包成标准的静态库 (.a 文件)
+    libtool -static -o libarclite_iphonesimulator.a dummy_sim_x86_64.o dummy_sim_arm64.o
+    libtool -static -o libarclite_iphoneos.a dummy_os_arm64.o
+    
+    # 5. 移入 Xcode 工具链目录
+    sudo cp libarclite_iphonesimulator.a "$ARC_DIR/"
+    sudo cp libarclite_iphoneos.a "$ARC_DIR/"
+    
+    # 6. 清理临时文件
+    rm dummy.c dummy*.o libarclite*.a
+    
+    echo "空壳 libarclite 库生成并注入完毕！格式 100% 兼容！"
 else
     echo "arc 目录已存在，跳过补齐。"
 fi
 
-# 1. 安装 gogio
 echo "正在下载并安装 gogio..."
 go install github.com/lianhong2758/gio-cmd/gogio@latest
 
-# 2. 准备构建
-# 进入 Gio UI 源码所在的入口目录
 if [ -d "desktop_app" ]; then
     cd desktop_app
 else
@@ -41,7 +50,6 @@ fi
 
 echo "--- 开始编译 iOS App ---"
 
-# 3. 使用 gogio 编译未签名的 .app 目录
 gogio -target ios \
  -o ../music-dl.app \
  -name MusicDL \
@@ -51,7 +59,6 @@ gogio -target ios \
 
 cd ..
 
-# 4. 打包为未签名的 .ipa 文件，供侧载使用
 echo "--- 正在打包为 IPA ---"
 if [ -d "music-dl.app" ]; then
     mkdir -p Payload
