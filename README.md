@@ -215,6 +215,50 @@ TUI 常用按键：
 
 本项目已配置 GitHub Actions 工作流。当推送代码并打上版本标签（如 `v1.0.0`）时，会自动触发 `.github/workflows/docker.yml`，构建跨平台镜像（支持 amd64 和 arm64）并推送到 DockerHub。
 
+### Android APK 构建
+
+项目支持通过 Gio 打包 Android APK，输出文件为仓库根目录下的 `music-dl.apk`。
+
+#### 1. 本地构建 APK（Windows）
+
+前置条件：
+
+* Go 已安装并可用（建议 1.25+）
+* JDK 8（脚本会优先自动探测）
+* Android SDK 已安装，默认路径 `C:\Android`
+* 可用的 NDK（脚本会自动尝试安装 `27.0.12077973`）
+
+执行命令：
+
+```bat
+cd go-music-dl
+package_app.bat
+
+```
+
+脚本会自动：
+
+* 检测并切换到 JDK 8
+* 检测/安装 Android NDK
+* 安装 `gogio`
+* 构建 `music-dl.apk`
+
+若检测到 adb，会打印安装命令，例如：
+
+```bat
+adb install -r music-dl.apk
+
+```
+
+#### 2. Release 流程自动构建 APK
+
+`.github/workflows/release.yml` 中新增了 `build-android-apk` 任务。发布时会在 `windows-latest` 环境中：
+
+* 安装 Go、JDK 8、Android SDK
+* 安装 `platform-tools`、`platforms;android-34`、`build-tools;34.0.0`、`ndk;27.0.12077973`
+* 执行 `package_app.bat`
+* 上传 `music-dl.apk` 到 Actions Artifacts 和 GitHub Release
+
 **如果你 Fork 了本仓库并希望使用自己的构建流：**
 
 1. 在你的仓库 **Settings** -> **Secrets and variables** -> **Actions** 中添加：
