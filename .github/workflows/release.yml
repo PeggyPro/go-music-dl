@@ -428,7 +428,21 @@ jobs:
             exit /b 1
           )
 
-          for %%I in ("%SDKMANAGER%\..\..\..") do set "DETECTED_ANDROID_HOME=%%~fI"
+          set "DETECTED_ANDROID_HOME="
+          if defined ANDROID_SDK_ROOT if exist "%ANDROID_SDK_ROOT%\cmdline-tools" set "DETECTED_ANDROID_HOME=%ANDROID_SDK_ROOT%"
+          if not defined DETECTED_ANDROID_HOME if defined ANDROID_HOME if exist "%ANDROID_HOME%\cmdline-tools" set "DETECTED_ANDROID_HOME=%ANDROID_HOME%"
+
+          if not defined DETECTED_ANDROID_HOME (
+            for %%I in ("%SDKMANAGER%\..\..\..\..") do set "SDK_ROOT_CANDIDATE1=%%~fI"
+            for %%I in ("%SDKMANAGER%\..\..\..") do set "SDK_ROOT_CANDIDATE2=%%~fI"
+
+            if exist "%SDK_ROOT_CANDIDATE1%\cmdline-tools" (
+              set "DETECTED_ANDROID_HOME=%SDK_ROOT_CANDIDATE1%"
+            ) else (
+              set "DETECTED_ANDROID_HOME=%SDK_ROOT_CANDIDATE2%"
+            )
+          )
+
           if not exist "%DETECTED_ANDROID_HOME%\platform-tools" mkdir "%DETECTED_ANDROID_HOME%\platform-tools"
 
           echo SDKMANAGER=%SDKMANAGER%>> %GITHUB_ENV%
