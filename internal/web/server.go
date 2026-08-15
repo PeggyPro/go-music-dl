@@ -22,7 +22,10 @@ import (
 //go:embed templates/*
 var templateFS embed.FS
 
-var RoutePrefix = "/music"
+// DefaultRoutePrefix is the web UI base path used when no base path is configured.
+const DefaultRoutePrefix = "/music"
+
+var RoutePrefix = DefaultRoutePrefix
 
 type importCollectionMeta struct {
 	Enabled     bool
@@ -335,7 +338,7 @@ func NormalizeBasePath(p string) string {
 	p = strings.TrimSpace(p)
 	p = strings.TrimRight(p, "/")
 	if p == "" {
-		return "/music"
+		return DefaultRoutePrefix
 	}
 	if !strings.HasPrefix(p, "/") {
 		p = "/" + p
@@ -362,9 +365,7 @@ func StartDesktop(port string) {
 }
 
 func StartWithOptions(port string, opts StartOptions) {
-	if opts.BasePath != "" {
-		RoutePrefix = NormalizeBasePath(opts.BasePath)
-	}
+	RoutePrefix = NormalizeBasePath(opts.BasePath)
 	core.CM.Load()
 	if !opts.DisableAuth {
 		settings, err := core.GetWebAuthSettings()
