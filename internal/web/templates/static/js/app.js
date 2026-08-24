@@ -39,6 +39,11 @@ let webSettings = {
   downloadToLocal: true,
   downloadDir: "data/downloads",
   downloadFilenameTemplate: "{name} - {artist}",
+  webdavEnabled: false,
+  webdavUrl: "",
+  webdavUsername: "",
+  webdavPassword: "",
+  webdavDir: "music-dl",
   disableFloatingLyrics: false,
   webPageSize: DEFAULT_WEB_PAGE_SIZE,
   cliPageSize: DEFAULT_CLI_PAGE_SIZE,
@@ -60,6 +65,11 @@ function normalizeWebSettings(raw) {
     downloadToLocal: true,
     downloadDir: "data/downloads",
     downloadFilenameTemplate: "{name} - {artist}",
+    webdavEnabled: false,
+    webdavUrl: "",
+    webdavUsername: "",
+    webdavPassword: "",
+    webdavDir: "music-dl",
     disableFloatingLyrics: false,
     webPageSize: DEFAULT_WEB_PAGE_SIZE,
     cliPageSize: DEFAULT_CLI_PAGE_SIZE,
@@ -90,6 +100,24 @@ function normalizeWebSettings(raw) {
     raw.downloadFilenameTemplate.trim() !== ""
   ) {
     next.downloadFilenameTemplate = raw.downloadFilenameTemplate.trim();
+  }
+  if (typeof raw.webdavEnabled === "boolean") {
+    next.webdavEnabled = raw.webdavEnabled;
+  }
+  if (typeof raw.webdavUrl === "string" && raw.webdavUrl.trim() !== "") {
+    next.webdavUrl = raw.webdavUrl.trim();
+  }
+  if (
+    typeof raw.webdavUsername === "string" &&
+    raw.webdavUsername.trim() !== ""
+  ) {
+    next.webdavUsername = raw.webdavUsername.trim();
+  }
+  if (typeof raw.webdavPassword === "string") {
+    next.webdavPassword = raw.webdavPassword;
+  }
+  if (typeof raw.webdavDir === "string" && raw.webdavDir.trim() !== "") {
+    next.webdavDir = raw.webdavDir.trim().replace(/^\/+|\/+$/g, "");
   }
   if (typeof raw.disableFloatingLyrics === "boolean") {
     next.disableFloatingLyrics = raw.disableFloatingLyrics;
@@ -166,6 +194,23 @@ function applyVideoGenFeatureVisibility() {
     const element = document.getElementById(elementId);
     if (!element) return;
     element.style.display = webSettings[key] ? "flex" : "none";
+  });
+}
+
+function syncWebDAVVisibility() {
+  const fields = document.getElementById("webdav-settings-fields");
+  if (fields) {
+    fields.style.display = webSettings.webdavEnabled ? "block" : "none";
+  }
+}
+
+function bindWebDAVSettingEvents() {
+  const toggle = document.getElementById("setting-webdav-enabled");
+  if (!toggle || toggle.dataset.bound === "1") return;
+  toggle.dataset.bound = "1";
+  toggle.addEventListener("change", () => {
+    const fields = document.getElementById("webdav-settings-fields");
+    if (fields) fields.style.display = toggle.checked ? "block" : "none";
   });
 }
 
@@ -249,6 +294,35 @@ function applyWebSettings(settings) {
   if (embedToggle) {
     embedToggle.checked = webSettings.embedDownload;
   }
+
+  const webdavEnabledToggle = document.getElementById(
+    "setting-webdav-enabled",
+  );
+  if (webdavEnabledToggle) {
+    webdavEnabledToggle.checked = webSettings.webdavEnabled;
+  }
+  const webdavUrlInput = document.getElementById("setting-webdav-url");
+  if (webdavUrlInput) {
+    webdavUrlInput.value = webSettings.webdavUrl;
+  }
+  const webdavUsernameInput = document.getElementById(
+    "setting-webdav-username",
+  );
+  if (webdavUsernameInput) {
+    webdavUsernameInput.value = webSettings.webdavUsername;
+  }
+  const webdavPasswordInput = document.getElementById(
+    "setting-webdav-password",
+  );
+  if (webdavPasswordInput) {
+    webdavPasswordInput.value = webSettings.webdavPassword;
+  }
+  const webdavDirInput = document.getElementById("setting-webdav-dir");
+  if (webdavDirInput) {
+    webdavDirInput.value = webSettings.webdavDir;
+  }
+  bindWebDAVSettingEvents();
+  syncWebDAVVisibility();
 
   const dirInput = document.getElementById("setting-download-dir");
   if (dirInput) {
@@ -787,10 +861,16 @@ async function handleDownloadClick(link) {
   try {
     const data = await requestLocalDownload(link.href);
     let message = data.path || webSettings.downloadDir;
+    let warning = false;
     if (data.warning) {
       message += `\n提示: ${data.warning}`;
+      warning = true;
     }
-    showToast("下载完成", message, data.warning ? "warning" : "success", 0);
+    if (data.webdav_error) {
+      message += `\nWebDAV: ${data.webdav_error}`;
+      warning = true;
+    }
+    showToast("下载完成", message, warning ? "warning" : "success", 0);
     return true;
   } catch (error) {
     showToast("下载失败", error.message || "下载失败", "error", 0);
@@ -3748,6 +3828,14 @@ async function saveCookies() {
     downloadFilenameTemplate:
       document.getElementById("setting-download-filename-template")?.value ||
       "",
+    webdavEnabled: !!document.getElementById("setting-webdav-enabled")
+      ?.checked,
+    webdavUrl: document.getElementById("setting-webdav-url")?.value || "",
+    webdavUsername:
+      document.getElementById("setting-webdav-username")?.value || "",
+    webdavPassword:
+      document.getElementById("setting-webdav-password")?.value || "",
+    webdavDir: document.getElementById("setting-webdav-dir")?.value || "",
     disableFloatingLyrics: !document.getElementById("setting-floating-lyrics")
       ?.checked,
     webPageSize: parsePositiveInt(
@@ -6060,7 +6148,7 @@ async function batchDownload() {
           skipped++;
         } else {
           success++;
-          if (result && result.warning) {
+          if (result && (result.warning || result.webdav_error)) {
             warningCount++;
           }
         }
