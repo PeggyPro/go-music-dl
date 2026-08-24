@@ -4832,12 +4832,147 @@ const ap = new APlayer({
 
 window.ap = ap;
 
+const PLAYER_SPEEDS = Object.freeze([
+  0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3,
+]);
+let playerSpeed = (() => {
+  const saved = Number(localStorage.getItem("musicdl:playbackRate"));
+  return PLAYER_SPEEDS.includes(saved) ? saved : 1;
+})();
+
+window.PLAYER_SPEEDS = PLAYER_SPEEDS;
+window.playerSpeed = playerSpeed;
+window.getPlayerPlaybackRate = () => playerSpeed;
+
+function applyPlayerPlaybackRate(rate) {
+  if (!ap?.audio) return;
+  const normalized = Number(rate) || 1;
+  ap.audio.playbackRate = normalized;
+  if (window.VideoGen?.isLocalAudio && window.VideoGen?.localAudio) {
+    window.VideoGen.localAudio.playbackRate = normalized;
+  }
+  const btn = document.querySelector(".player-speed-btn");
+  if (btn) btn.textContent = `${normalized}x`;
+  document.querySelectorAll(".player-speed-option").forEach((option) => {
+    option.classList.toggle(
+      "active",
+      Number(option.dataset.rate) === normalized,
+    );
+  });
+  const vgBtn = document.getElementById("vg-speed-button");
+  if (vgBtn) vgBtn.textContent = `${normalized}x`;
+  document.querySelectorAll("#vg-speed-menu .vg-speed-option").forEach(
+    (option) => {
+      option.classList.toggle(
+        "active",
+        Number(option.dataset.rate) === normalized,
+      );
+    },
+  );
+  syncMediaSession();
+}
+
+function setPlayerPlaybackRate(rate) {
+  const normalized = Number(rate);
+  if (!PLAYER_SPEEDS.includes(normalized)) return;
+  playerSpeed = normalized;
+  window.playerSpeed = normalized;
+  localStorage.setItem("musicdl:playbackRate", String(normalized));
+  if (window.VideoGen) {
+    window.VideoGen.playbackRate = normalized;
+  }
+  applyPlayerPlaybackRate(normalized);
+}
+
+window.setPlayerPlaybackRate = setPlayerPlaybackRate;
+window.applyPlayerPlaybackRate = applyPlayerPlaybackRate;
+
+(function initPlayerSpeedControl() {
+  let attempts = 0;
+
+  function tryInject() {
+    attempts++;
+    if (attempts > 30) return;
+
+    const apFixed = document.querySelector(".aplayer.aplayer-fixed");
+    if (!apFixed) {
+      setTimeout(tryInject, 100);
+      return;
+    }
+    if (document.querySelector(".player-speed-wrap")) return;
+
+    const wrap = document.createElement("div");
+    wrap.className = "player-speed-wrap";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "player-speed-btn";
+    button.textContent = `${playerSpeed}x`;
+    button.title = "播放速度";
+    button.setAttribute("aria-label", "播放速度");
+    button.setAttribute("aria-haspopup", "true");
+    button.setAttribute("aria-expanded", "false");
+
+    const menu = document.createElement("div");
+    menu.className = "player-speed-menu";
+    menu.hidden = true;
+    menu.innerHTML = PLAYER_SPEEDS.map(
+      (rate) =>
+        `<button type="button" class="player-speed-option${
+          rate === playerSpeed ? " active" : ""
+        }" data-rate="${rate}">${rate}x</button>`,
+    ).join("");
+
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const nextHidden = !menu.hidden;
+      menu.hidden = nextHidden;
+      button.setAttribute("aria-expanded", String(!nextHidden));
+    });
+
+    menu.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const option = event.target.closest(".player-speed-option");
+      if (!option) return;
+      setPlayerPlaybackRate(Number(option.dataset.rate));
+      menu.hidden = true;
+      button.setAttribute("aria-expanded", "false");
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!wrap.contains(event.target)) {
+        menu.hidden = true;
+        button.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !menu.hidden) {
+        menu.hidden = true;
+        button.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    wrap.append(button, menu);
+    apFixed.appendChild(wrap);
+    applyPlayerPlaybackRate(playerSpeed);
+  }
+
+  setTimeout(tryInject, 100);
+})();
+
+applyPlayerPlaybackRate(playerSpeed);
+
 setupMediaSession();
 ap.audio.addEventListener("timeupdate", () => KaraokeLyrics.update());
 ap.audio.addEventListener("seeked", () => KaraokeLyrics.update());
-ap.audio.addEventListener("loadedmetadata", () =>
-  KaraokeLyrics.load(getCurrentAPlayerAudio()),
-);
+ap.audio.addEventListener("loadedmetadata", () => {
+  KaraokeLyrics.load(getCurrentAPlayerAudio());
+  applyPlayerPlaybackRate(playerSpeed);
+});
+ap.audio.addEventListener("emptied", () => {
+  applyPlayerPlaybackRate(playerSpeed);
+});
 ap.audio.addEventListener("play", () =>
   KaraokeLyrics.handlePlayStateChange(true),
 );
@@ -4956,6 +5091,7 @@ setTimeout(() => {
 
 ap.on("listswitch", (e) => {
   const index = e.index;
+  applyPlayerPlaybackRate(playerSpeed);
   const newAudio = ap.list.audios[index];
   const playbackCardID = getPlaybackCardID(newAudio);
   if (playbackCardID) {
@@ -4996,6 +5132,7 @@ ap.on("listswitch", (e) => {
 });
 
 ap.on("play", () => {
+  applyPlayerPlaybackRate(playerSpeed);
   const idx = ap?.list?.index;
   const audio = typeof idx === "number" ? ap.list.audios[idx] : null;
   rememberPlaybackHistory(audio);
