@@ -495,7 +495,7 @@ TUI 在输入界面按 `w` 直接拉取推荐歌单，然后回车进详情。
 | 酷我音乐    | `kuwo`     | ✅   | ✅   | ✅   | ✅       | ✅       | ✅       | ✅       | ❌       | ❌          | ✅       | ✅           | ✅       | ✅       | ✅           |                                        |
 | 咪咕音乐    | `migu`     | ✅   | ✅   | ✅   | ✅       | ✅       | ❌       | ✅       | ❌       | ❌          | ✅       | ✅           | ✅       | ✅       | ✅           | 歌单歌曲使用 MIGUM3 接口               |
 | 千千音乐    | `qianqian` | ✅   | ✅   | ✅   | ✅       | ⚠️     | ❌       | ✅       | ❌       | ❌          | ✅       | ✅           | ✅       | ✅       | ✅           | 歌单搜索可能返回空，已知 ID/链接可解析 |
-| 汽水音乐    | `soda`     | ❌   | ✅   | ✅   | ✅       | ✅       | ❌       | ❌       | ✅       | ⚠️ 未调通 | ✅       | ✅           | ✅       | ✅       | ✅           | 单曲搜索未调通；音频解密，支持短链和个人歌单；扫码登录暂未调通 |
+| 汽水音乐    | `soda`     | ✅   | ✅   | ✅   | ✅       | ✅       | ❌       | ❌       | ✅       | ⚠️ 未调通 | ✅       | ✅           | ✅       | ✅       | ✅           | 音频解密，支持短链和个人歌单；扫码登录暂未调通 |
 | 5sing       | `fivesing` | ✅   | ✅   | ✅   | ✅       | ✅       | ❌       | ❌       | ❌       | ❌          | ✅       | ✅           | ❌       | ❌       | ❌           |                                        |
 | Jamendo     | `jamendo`  | ✅   | ✅   | ✅   | ✅       | ⚠️     | ❌       | ❌       | ❌       | ❌          | ✅       | ✅           | ✅       | ✅       | ✅           | 歌单搜索可能返回空，公开歌单链接可解析 |
 | JOOX        | `joox`     | ✅   | ✅   | ✅   | ✅       | ✅       | ❌       | ✅       | ❌       | ❌          | ✅       | ✅           | ✅       | ✅       | ✅           | 歌单支持 OpenJOOX 接口和网页数据兜底   |
@@ -680,6 +680,7 @@ go-music-dl/
 * **无损音乐**: [Suxiaoqinx/Netease_url](https://github.com/Suxiaoqinx/Netease_url) - 网易云音乐 FLAC 无损音乐解析
 * **QQ 音乐**: [Suxiaoqinx/qqmusic_flac](https://github.com/Suxiaoqinx/qqmusic_flac) - QQ 音乐 FLAC 解析
 * **逐字歌词展示参考**: [chenmozhijin/LDDC](https://github.com/chenmozhijin/LDDC) - 原文 / 译文 / 罗马音逐字歌词的组织与展示思路参考
+* **汽水音乐接口参考**: [Zencok/baka-plugins](https://github.com/Zencok/baka-plugins) - 汽水音乐搜索、取流和扫码接口参考
 
 ## 免责声明
 
