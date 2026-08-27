@@ -28,6 +28,8 @@ func TestBridgeReportsPlaybackState(t *testing.T) {
 		`notifyPlaybackState("paused")`,
 		`notifyPlaybackState("ended")`,
 		`notifyPlaybackState("released")`,
+		`bindAPlayerPlayback`,
+		`window.ap.audio === audio`,
 	} {
 		if !strings.Contains(bridgeScript, want) {
 			t.Fatalf("bridgeScript missing playback token %q", want)
@@ -51,6 +53,39 @@ func TestHandleWebViewMessagePlaybackDoesNotOpenURL(t *testing.T) {
 	app.handleWebViewMessage("playback:paused")
 	if app.pendingExternalOpenTo != nil {
 		t.Fatalf("playback message should not be treated as URL: %s", app.pendingExternalOpenTo)
+	}
+}
+
+func TestPlaybackStateDefersResumeReloadUntilStopped(t *testing.T) {
+	app := newDesktopApp(nil, nil)
+	app.reloadDeferred = true
+	app.reloadPending = true
+
+	app.handlePlaybackState("playing")
+	if !app.playbackActive {
+		t.Fatal("playing should mark playback as active")
+	}
+	if app.reloadDeferred || app.reloadPending {
+		t.Fatal("playing should cancel pending resume reloads")
+	}
+
+	app.handlePlaybackState("paused")
+	if app.playbackActive {
+		t.Fatal("paused should clear playback active state")
+	}
+	if app.reloadPending || app.reloadDeferred {
+		t.Fatal("paused should not create a reload without a new frame gap")
+	}
+}
+
+func TestPlaybackStopFlushesDeferredReload(t *testing.T) {
+	app := newDesktopApp(nil, nil)
+	app.handlePlaybackState("playing")
+	app.reloadDeferred = true
+
+	app.handlePlaybackState("ended")
+	if !app.reloadPending || app.reloadDeferred {
+		t.Fatal("stopping playback should flush a deferred resume reload")
 	}
 }
 

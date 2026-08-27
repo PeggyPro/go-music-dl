@@ -46,6 +46,8 @@ type desktopApp struct {
 	initialNavAcked       bool
 	currentWebURL         string
 	reloadPending         bool
+	reloadDeferred        bool
+	playbackActive        bool
 	lastFrameAt           time.Time
 }
 
@@ -123,6 +125,38 @@ const bridgeScript = `(function () {
   window.addEventListener("pagehide", function () {
     notifyPlaybackState("released");
   });
+
+  function bindAPlayerPlayback() {
+    var player = window.ap;
+    if (!player || !player.audio || player.audio.__musicDlPlaybackBound) {
+      return;
+    }
+    var audio = player.audio;
+    audio.__musicDlPlaybackBound = true;
+    function notifyCurrentPlaybackState(state) {
+      if (window.ap && window.ap.audio === audio) {
+        notifyPlaybackState(state);
+      }
+    }
+    audio.addEventListener("playing", function () {
+      notifyCurrentPlaybackState("playing");
+    });
+    audio.addEventListener("pause", function () {
+      notifyCurrentPlaybackState("paused");
+    });
+    audio.addEventListener("ended", function () {
+      notifyCurrentPlaybackState("ended");
+    });
+  }
+
+  function bindAPlayerWhenReady() {
+    bindAPlayerPlayback();
+    if (!window.ap || !window.ap.audio) {
+      setTimeout(bindAPlayerWhenReady, 250);
+    }
+  }
+  bindAPlayerWhenReady();
+  setInterval(bindAPlayerPlayback, 500);
 
   document.addEventListener("click", function (event) {
     if (event.defaultPrevented) {
@@ -214,7 +248,11 @@ func (a *desktopApp) handleFrame(evt app.FrameEvent) {
 	if a.initialNavAcked && !a.lastFrameAt.IsZero() && now.Sub(a.lastFrameAt) > resumeReloadThreshold {
 		// iOS WKWebView can come back from background with a blank native layer.
 		// A long frame gap is the only lifecycle signal available through Gio here.
-		a.reloadPending = true
+		if a.playbackActive {
+			a.reloadDeferred = true
+		} else {
+			a.reloadPending = true
+		}
 	}
 	a.lastFrameAt = now
 
@@ -441,8 +479,16 @@ func (a *desktopApp) handleWebViewState(state string) {
 func (a *desktopApp) handlePlaybackState(state string) {
 	switch strings.TrimSpace(state) {
 	case "playing":
+		a.playbackActive = true
+		a.reloadPending = false
+		a.reloadDeferred = false
 		a.setPlaybackWakeLock(true)
 	case "paused", "ended", "released":
+		a.playbackActive = false
+		if a.reloadDeferred {
+			a.reloadDeferred = false
+			a.reloadPending = true
+		}
 		a.setPlaybackWakeLock(false)
 	}
 }
