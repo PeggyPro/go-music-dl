@@ -35,11 +35,57 @@ func TestBridgeReportsPlaybackState(t *testing.T) {
 	}
 }
 
+func TestBridgeReportsAppLoadState(t *testing.T) {
+	for _, want := range []string{
+		"musicDlAppState",
+		`notifyAppState("loaded")`,
+	} {
+		if !strings.Contains(bridgeScript, want) {
+			t.Fatalf("bridgeScript missing app state token %q", want)
+		}
+	}
+}
+
 func TestHandleWebViewMessagePlaybackDoesNotOpenURL(t *testing.T) {
 	app := newDesktopApp(nil, nil)
 	app.handleWebViewMessage("playback:paused")
 	if app.pendingExternalOpenTo != nil {
 		t.Fatalf("playback message should not be treated as URL: %s", app.pendingExternalOpenTo)
+	}
+}
+
+func TestHandleWebViewMessageAppStateDoesNotOpenURL(t *testing.T) {
+	app := newDesktopApp(nil, nil)
+	app.handleWebViewMessage("state:loaded")
+	if app.pendingExternalOpenTo != nil {
+		t.Fatalf("app state message should not be treated as URL: %s", app.pendingExternalOpenTo)
+	}
+	if !app.initialNavAcked {
+		t.Fatal("state:loaded should acknowledge the initial navigation")
+	}
+}
+
+func TestNavigationEventTracksCurrentURL(t *testing.T) {
+	app := newDesktopApp(nil, nil)
+	app.initialNavReady = true
+	app.handleNavigationEvent("http://127.0.0.1:37777/music/settings")
+
+	if app.currentWebURL != "http://127.0.0.1:37777/music/settings" {
+		t.Fatalf("currentWebURL = %q", app.currentWebURL)
+	}
+	if app.initialNavAcked {
+		t.Fatal("navigation event alone must not acknowledge an HTTP page; only DOMContentLoaded can")
+	}
+}
+
+func TestNavigationEventAcknowledgesStartupErrorDataURL(t *testing.T) {
+	app := newDesktopApp(nil, nil)
+	app.initialNavReady = true
+	app.initialNavURL = "data:text/html;charset=utf-8,startup-error"
+	app.handleNavigationEvent(app.initialNavURL)
+
+	if !app.initialNavAcked {
+		t.Fatal("data URL navigation should acknowledge the startup error page")
 	}
 }
 
