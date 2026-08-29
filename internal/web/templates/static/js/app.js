@@ -1316,6 +1316,14 @@ async function navigateTo(url, options = {}) {
     return false;
   }
 
+  // Android 系统 WebView 对 fetch + DOMParser 的整段 DOM 替换不够稳定，
+  // 搜索等内部路由在 SPA 替换后容易出现空白页。这里让安卓端统一走
+  // 原生整页导航，由服务端直接渲染结果，保证页面内容始终可见。
+  if (/Android/i.test(navigator.userAgent)) {
+    window.location.href = targetURL.toString();
+    return false;
+  }
+
   if (navigationAbortController) {
     navigationAbortController.abort();
   }
@@ -4903,20 +4911,29 @@ const KaraokeLyrics = (() => {
 
 window.KaraokeLyrics = KaraokeLyrics;
 
-// APlayer Config
-const ap = new APlayer({
-  container: document.getElementById("aplayer"),
-  fixed: true,
-  autoplay: false,
-  theme: "#10b981",
-  loop: "all",
-  order: "list",
-  preload: "metadata",
-  volume: 0.7,
-  listFolded: false,
-  lrcType: 3,
-  audio: [],
-});
+// APlayer Config. APlayer 由 CDN 加载，若 CDN 不可达会影响整个脚本；
+// 这里把初始化单独保护起来，避免播放器库缺失导致页面其他功能不可用。
+let ap = null;
+try {
+  if (typeof APlayer === "undefined") {
+    throw new Error("APlayer CDN 未加载");
+  }
+  ap = new APlayer({
+    container: document.getElementById("aplayer"),
+    fixed: true,
+    autoplay: false,
+    theme: "#10b981",
+    loop: "all",
+    order: "list",
+    preload: "metadata",
+    volume: 0.7,
+    listFolded: false,
+    lrcType: 3,
+    audio: [],
+  });
+} catch (error) {
+  console.warn("[music-dl] APlayer 初始化失败，播放器功能不可用:", error);
+}
 
 window.ap = ap;
 
