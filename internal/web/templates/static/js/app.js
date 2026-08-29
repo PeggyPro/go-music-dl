@@ -968,6 +968,16 @@ function bindSearchForm(root = document) {
   if (!searchForm) return;
 
   searchForm.onsubmit = (event) => {
+    // Android 系统 WebView 下保留原生表单提交，让 WebView 直接用 GET
+    // 导航到搜索接口，由服务端整页渲染结果，避免 SPA DOM 替换导致结果为空。
+    if (/Android/i.test(navigator.userAgent)) {
+      const pageInput = searchForm.querySelector('input[name="page"]');
+      if (pageInput) {
+        pageInput.value = "1";
+      }
+      return;
+    }
+
     event.preventDefault();
 
     const pageInput = searchForm.querySelector('input[name="page"]');
