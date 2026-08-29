@@ -1390,7 +1390,7 @@ async function navigateTo(url, options = {}) {
     updateFloatPageNav();
 
     if (options.scroll !== false) {
-      scrollToPageContent();
+      window.scrollTo({ top: 0, behavior: "auto" });
     }
 
     return true;
@@ -1405,24 +1405,6 @@ async function navigateTo(url, options = {}) {
       navigationAbortController = null;
     }
   }
-}
-
-// After a search the search box and enlarged source grid occupy the first
-// viewport, so results can be rendered far below the fold. Keep the result
-// list (or empty-state message) in view instead of leaving users at the top
-// where it looks like nothing was found.
-function scrollToPageContent() {
-  const target =
-    document.querySelector(".list-header") ||
-    document.querySelector(".no-results");
-  if (target) {
-    const top = target.getBoundingClientRect().top + window.scrollY - 12;
-    if (top > 0) {
-      window.scrollTo({ top, behavior: "auto" });
-      return;
-    }
-  }
-  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 function refreshCurrentPageContent(options = {}) {
@@ -1585,7 +1567,6 @@ document.addEventListener("DOMContentLoaded", function () {
   fetchWebSettings().finally(() => maybeAutoCheckUpdate());
   bindPageNavigationEvents();
   initializePageContent(document);
-  scrollToPageContent();
   updateFloatPageNav();
   if (
     new URLSearchParams(window.location.search).get(OPEN_CONFIG_QUERY) === "1"
@@ -2257,7 +2238,7 @@ async function loadLocalMusicPage(page = 1, options = {}) {
       updateLocalMusicPageURL(targetPage, !!options.replaceHistory);
     }
     if (options.scroll) {
-      scrollToPageContent();
+      window.scrollTo({ top: 0, behavior: "auto" });
     }
     return true;
   } catch (error) {
