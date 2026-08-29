@@ -968,16 +968,6 @@ function bindSearchForm(root = document) {
   if (!searchForm) return;
 
   searchForm.onsubmit = (event) => {
-    // Android 系统 WebView 下保留原生表单提交，让 WebView 直接用 GET
-    // 导航到搜索接口，由服务端整页渲染结果，避免 SPA DOM 替换导致结果为空。
-    if (/Android/i.test(navigator.userAgent)) {
-      const pageInput = searchForm.querySelector('input[name="page"]');
-      if (pageInput) {
-        pageInput.value = "1";
-      }
-      return;
-    }
-
     event.preventDefault();
 
     const pageInput = searchForm.querySelector('input[name="page"]');
@@ -1322,14 +1312,6 @@ async function navigateTo(url, options = {}) {
     targetURL.origin !== window.location.origin ||
     !isAppRoute(targetURL.pathname)
   ) {
-    window.location.href = targetURL.toString();
-    return false;
-  }
-
-  // Android 系统 WebView 对 fetch + DOMParser 的整段 DOM 替换不够稳定，
-  // 搜索等内部路由在 SPA 替换后容易出现空白页。这里让安卓端统一走
-  // 原生整页导航，由服务端直接渲染结果，保证页面内容始终可见。
-  if (/Android/i.test(navigator.userAgent)) {
     window.location.href = targetURL.toString();
     return false;
   }
